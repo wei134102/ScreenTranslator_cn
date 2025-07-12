@@ -1,7 +1,8 @@
 name: App build
 
-on:
+on: 
   workflow_dispatch:  # 手动触发
+  push:              # 推送时也触发
 jobs:
   release:
     name: Create release
