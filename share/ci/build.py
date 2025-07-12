@@ -21,6 +21,12 @@ c.run('lrelease "{}"'.format(pro_file))
 c.set_make_threaded()
 build_type_flag = 'debug' if build_type == 'debug' else 'release'
 qmake_flags = os.environ.get('QMAKE_FLAGS','') + ' CONFIG+=' + build_type_flag
-c.run('qmake {} "{}"'.format(qmake_flags, pro_file))
+
+# 检查是否使用ninja
 make_cmd = c.get_make_cmd()
+if make_cmd == 'ninja':
+    qmake_flags += ' -spec linux-clang' if platform.system() == "Linux" else ' -spec win32-msvc'
+    qmake_flags += ' CONFIG+=ninja'
+
+c.run('qmake {} "{}"'.format(qmake_flags, pro_file))
 c.run(make_cmd)

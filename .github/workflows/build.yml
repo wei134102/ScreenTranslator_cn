@@ -33,7 +33,7 @@ jobs:
   build:
     name: Build ${{ matrix.config.name }}${{ matrix.config.tag }}
     runs-on: ${{ matrix.config.os }}
-    timeout-minutes: 60
+    timeout-minutes: 120
     env:
       OS: ${{ matrix.config.name }}
       MSVC_VERSION: C:/Program Files/Microsoft Visual Studio/2022/Enterprise
@@ -41,7 +41,6 @@ jobs:
       matrix:
         config:
           - { name: "linux", os: ubuntu-22.04 }
-          # 暂时注释掉Windows构建，先确保Linux构建正常
           - { name: "win64", os: windows-latest }
           # - { name: "win32", os: windows-latest }
           # - { name: "macos", os: macos-latest }
@@ -53,14 +52,21 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.x"
+          python-version: "3.10"
 
-      - name: Install system libs
+      - name: Install system libs (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libxkbcommon-x11-0 libxcb-*
+          sudo apt-get install -y libgl1-mesa-dev libxkbcommon-x11-0 libxcb-* build-essential cmake ninja-build pkg-config
           echo "QMAKE_FLAGS=QMAKE_CXX=g++-10 QMAKE_CC=gcc-10 QMAKE_LINK=g++-10" >> $GITHUB_ENV
+
+      - name: Install system libs (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          # 安装必要的Windows构建工具
+          choco install ninja cmake --yes
+          echo "QMAKE_FLAGS=QMAKE_CXX=cl QMAKE_CC=cl QMAKE_LINK=link" >> $GITHUB_ENV
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -91,16 +97,24 @@ jobs:
           dir "C:\Program Files\Microsoft Visual Studio" 2>nul || echo "Visual Studio not found in default location"
           echo "Available Visual Studio installations:"
           where /q vswhere && vswhere -all -property installationPath || echo "vswhere not available"
+          echo "CMake version:"
+          cmake --version
+          echo "Ninja version:"
+          ninja --version
           echo "=== End Windows Check ==="
 
-      - name: Make a release
+      - name: Setup build environment
         shell: bash
         run: |
-          set -e
-          echo "Starting release process..."
-          echo "Current directory: $(pwd)"
-          echo "OS: ${{ env.OS }}"
-          echo "Platform: $(uname -a)"
+          echo "Setting up build environment..."
+          
+          # 创建必要的目录
+          mkdir -p deps
+          mkdir -p build
+          
+          # 设置环境变量
+          export ST_DEPS_DIR=$(pwd)/deps
+          export PATH=$(pwd)/qt/bin:$PATH
           
           # 检查依赖目录
           if [ -d "deps" ]; then
@@ -119,27 +133,84 @@ jobs:
           echo "Checking build scripts..."
           ls -la ./share/ci/
           
-          # 运行构建脚本（添加重试机制）
-          echo "Running release.py..."
-          max_retries=3
-          retry_count=0
+          # 设置环境变量到GitHub Actions
+          echo "ST_DEPS_DIR=$(pwd)/deps" >> $GITHUB_ENV
+          echo "PATH=$(pwd)/qt/bin:$PATH" >> $GITHUB_ENV
+
+      - name: Download dependencies
+        shell: bash
+        run: |
+          set -e
+          echo "Starting dependency download..."
           
-          while [ $retry_count -lt $max_retries ]; do
-            echo "Attempt $((retry_count + 1)) of $max_retries"
-            if python ./share/ci/release.py; then
-              echo "Build completed successfully"
-              break
-            else
-              retry_count=$((retry_count + 1))
-              if [ $retry_count -lt $max_retries ]; then
-                echo "Build failed, retrying in 30 seconds..."
-                sleep 30
-              else
-                echo "Build failed after $max_retries attempts"
-                exit 1
-              fi
-            fi
-          done
+          # 设置环境变量
+          export ST_DEPS_DIR=$(pwd)/deps
+          export PATH=$(pwd)/qt/bin:$PATH
+          
+          # 下载Qt
+          echo "Downloading Qt..."
+          python ./share/ci/get_qt.py
+          
+          # 下载SSL
+          echo "Downloading SSL..."
+          python ./share/ci/get_qt_ssl.py
+          
+          # 下载Leptonica
+          echo "Downloading Leptonica..."
+          python ./share/ci/get_leptonica.py
+          
+          # 下载Tesseract
+          echo "Downloading Tesseract..."
+          python ./share/ci/get_tesseract.py
+          
+          # 下载Hunspell
+          echo "Downloading Hunspell..."
+          python ./share/ci/get_hunspell.py
+          
+          echo "All dependencies downloaded successfully"
+
+      - name: Run tests
+        shell: bash
+        run: |
+          set -e
+          echo "Running tests..."
+          
+          # 设置环境变量
+          export ST_DEPS_DIR=$(pwd)/deps
+          export PATH=$(pwd)/qt/bin:$PATH
+          
+          # 运行测试
+          python ./share/ci/test.py
+
+      - name: Build application
+        shell: bash
+        run: |
+          set -e
+          echo "Building application..."
+          
+          # 设置环境变量
+          export ST_DEPS_DIR=$(pwd)/deps
+          export PATH=$(pwd)/qt/bin:$PATH
+          
+          # 构建应用
+          python ./share/ci/build.py
+
+      - name: Create package
+        shell: bash
+        run: |
+          set -e
+          echo "Creating package..."
+          
+          # 设置环境变量
+          export ST_DEPS_DIR=$(pwd)/deps
+          export PATH=$(pwd)/qt/bin:$PATH
+          
+          # 创建包
+          if [ "${{ env.OS }}" = "linux" ]; then
+            python ./share/ci/appimage.py
+          elif [ "${{ env.OS }}" = "win64" ]; then
+            python ./share/ci/windeploy.py
+          fi
           
           # 获取构建产物名称
           echo "Getting artifact name..."
@@ -153,9 +224,10 @@ jobs:
             ls -la "$artifact_name"
           else
             echo "Build artifact not found: $artifact_name"
-            ls -la *.zip *.exe 2>/dev/null || echo "No zip or exe files found"
+            ls -la *.zip *.exe *.AppImage 2>/dev/null || echo "No build artifacts found"
             echo "Current directory contents:"
             ls -la
+            exit 1
           fi
 
       - name: Upload build artifact

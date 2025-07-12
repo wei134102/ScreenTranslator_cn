@@ -4,6 +4,11 @@ TARGET = screen-translator
 TEMPLATE = app
 CONFIG += c++17
 
+# 支持ninja构建
+ninja {
+    CONFIG += ninja
+}
+
 DEPS_DIR=$$(ST_DEPS_DIR)
 isEmpty(DEPS_DIR):DEPS_DIR=$$PWD/../deps
 INCLUDEPATH += $$DEPS_DIR/include

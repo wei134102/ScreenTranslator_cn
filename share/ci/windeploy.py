@@ -16,7 +16,8 @@ c.print('>> Making win deploy')
 
 if os_name.startswith('win'):
     env_cmd = c.get_msvc_env_cmd(bitness=bitness, msvc_version=msvc_version)
-    c.apply_cmd_env(env_cmd)
+    if env_cmd:
+        c.apply_cmd_env(env_cmd)
 
 pwd = os.getcwd()
 os.chdir(build_dir)

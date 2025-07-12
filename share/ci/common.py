@@ -150,8 +150,23 @@ def get_msvc_env_cmd(bitness='64', msvc_version=''):
     if platform.system() != "Windows":
         return None
 
-    env_script = msvc_version + '/VC/Auxiliary/Build/vcvars{}.bat'.format(bitness)
-    return '"' + env_script + '"'
+    # 尝试多个可能的Visual Studio路径
+    possible_paths = [
+        msvc_version + '/VC/Auxiliary/Build/vcvars{}.bat'.format(bitness),
+        'C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars{}.bat'.format(bitness),
+        'C:/Program Files/Microsoft Visual Studio/2022/Professional/VC/Auxiliary/Build/vcvars{}.bat'.format(bitness),
+        'C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvars{}.bat'.format(bitness),
+        'C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars{}.bat'.format(bitness),
+        'C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/VC/Auxiliary/Build/vcvars{}.bat'.format(bitness),
+        'C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build/vcvars{}.bat'.format(bitness),
+    ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            return '"' + path + '"'
+    
+    # 如果找不到，返回默认路径
+    return '"' + possible_paths[0] + '"'
 
 
 def get_cmake_arch_args(bitness='64'):
@@ -162,7 +177,16 @@ def get_cmake_arch_args(bitness='64'):
 
 def get_make_cmd():
     """Return `make` command for current platform"""
-    return 'nmake' if platform.system() == "Windows" else 'make'
+    if platform.system() == "Windows":
+        # 检查是否有ninja可用
+        if which('ninja'):
+            return 'ninja'
+        return 'nmake'
+    else:
+        # 检查是否有ninja可用
+        if which('ninja'):
+            return 'ninja'
+        return 'make'
 
 
 def set_make_threaded():
@@ -186,21 +210,53 @@ def ensure_got_path(path):
 def apply_cmd_env(cmd):
     """Run cmd and apply its modified environment"""
     print('>> Applying env after', cmd)
-    separator = 'env follows'
-    script = 'import os,sys;sys.stdout.buffer.write(str(dict(os.environ)).encode(\\\"utf-8\\\"))'
-    env = sub.run('{} && echo "{}" && python -c "{}"'.format(cmd, separator, script),
-                  shell=True, stdout=sub.PIPE, encoding='utf-8')
+    
+    if platform.system() == "Windows":
+        # Windows上使用更稳定的方法
+        try:
+            # 尝试运行vcvarsall.bat并获取环境
+            result = sub.run(cmd + ' && set', shell=True, capture_output=True, text=True, encoding='cp437')
+            if result.returncode == 0:
+                # 解析环境变量
+                for line in result.stdout.split('\n'):
+                    if '=' in line:
+                        key, value = line.split('=', 1)
+                        if key and value:
+                            os.environ[key.strip()] = value.strip()
+                            print(f'>>> Set env {key.strip()}')
+        except Exception as e:
+            print(f'>> Warning: Failed to apply environment from {cmd}: {e}')
+            # 如果失败，尝试使用vswhere找到Visual Studio
+            try:
+                result = sub.run('vswhere -latest -property installationPath', shell=True, capture_output=True, text=True)
+                if result.returncode == 0:
+                    vs_path = result.stdout.strip()
+                    if vs_path:
+                        vcvars_path = os.path.join(vs_path, 'VC', 'Auxiliary', 'Build', 'vcvars64.bat')
+                        if os.path.exists(vcvars_path):
+                            print(f'>> Using Visual Studio at: {vs_path}')
+                            # 设置一些基本的环境变量
+                            os.environ['VCINSTALLDIR'] = os.path.join(vs_path, 'VC')
+                            os.environ['VSINSTALLDIR'] = vs_path
+            except Exception as e2:
+                print(f'>> Warning: Failed to find Visual Studio: {e2}')
+    else:
+        # Linux/macOS使用原来的方法
+        separator = 'env follows'
+        script = 'import os,sys;sys.stdout.buffer.write(str(dict(os.environ)).encode(\\\"utf-8\\\"))'
+        env = sub.run('{} && echo "{}" && python -c "{}"'.format(cmd, separator, script),
+                      shell=True, stdout=sub.PIPE, encoding='utf-8')
 
-    stringed = env.stdout[env.stdout.index(separator) + len(separator) + 1:]
-    parsed = ast.literal_eval(stringed)
+        stringed = env.stdout[env.stdout.index(separator) + len(separator) + 1:]
+        parsed = ast.literal_eval(stringed)
 
-    for key, value in parsed.items():
-        if key in os.environ and os.environ[key] == value:
-            continue
-        if key in os.environ:
-            print('>>> Changing env', key, '\nfrom\n',
-                  os.environ[key], '\nto\n', value)
-        os.environ[key] = value
+        for key, value in parsed.items():
+            if key in os.environ and os.environ[key] == value:
+                continue
+            if key in os.environ:
+                print('>>> Changing env', key, '\nfrom\n',
+                      os.environ[key], '\nto\n', value)
+            os.environ[key] = value
 
 
 def md5sum(path):

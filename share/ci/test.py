@@ -16,8 +16,15 @@ c.recreate_dir(build_dir)
 os.chdir(build_dir)
 
 c.set_make_threaded()
-c.run('qmake {} "{}"'.format(os.environ.get('QMAKE_FLAGS', ''), test_pro_file))
+qmake_flags = os.environ.get('QMAKE_FLAGS', '')
+
+# 检查是否使用ninja
 make_cmd = c.get_make_cmd()
+if make_cmd == 'ninja':
+    qmake_flags += ' -spec linux-clang' if platform.system() == "Linux" else ' -spec win32-msvc'
+    qmake_flags += ' CONFIG+=ninja'
+
+c.run('qmake {} "{}"'.format(qmake_flags, test_pro_file))
 c.run(make_cmd)
 
 for file in glob.glob('./**/tests*', recursive=True):

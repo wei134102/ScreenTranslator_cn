@@ -83,14 +83,22 @@ cmake_args = '"{}" -DCMAKE_INSTALL_PREFIX="{}" -DBUILD_SHARED_LIBS=ON \
 
 if platform.system() == "Windows":
     env_cmd = c.get_msvc_env_cmd(bitness=bitness, msvc_version=msvc_version)
-    c.apply_cmd_env(env_cmd)
+    if env_cmd:
+        c.apply_cmd_env(env_cmd)
     cmake_args += ' ' + c.get_cmake_arch_args(bitness=bitness)
 
 c.set_make_threaded()
 c.run('cmake {}'.format(cmake_args))
 build_type_flag = 'Debug' if build_type == 'debug' else 'Release'
-c.run('cmake --build . --config {}'.format(build_type_flag))
-c.run('cmake --build . --target install --config {}'.format(build_type_flag))
+
+# 检查是否使用ninja
+make_cmd = c.get_make_cmd()
+if make_cmd == 'ninja':
+    c.run('cmake --build . --config {}'.format(build_type_flag))
+    c.run('cmake --build . --target install --config {}'.format(build_type_flag))
+else:
+    c.run('cmake --build . --config {}'.format(build_type_flag))
+    c.run('cmake --build . --target install --config {}'.format(build_type_flag))
 
 with open(cache_file, 'w') as f:
     f.write(cache_file_data)

@@ -35,7 +35,9 @@ os.chdir(build_dir)
 
 install_dir = os.path.abspath('appdir')
 c.recreate_dir(install_dir)
-c.run('make INSTALL_ROOT={0} DESTDIR={0} install'.format(install_dir))
+# 使用ninja或make进行安装
+make_cmd = c.get_make_cmd()
+c.run('{} INSTALL_ROOT={0} DESTDIR={0} install'.format(install_dir, make_cmd))
 
 if c.is_inside_docker():
     c.run('{}  --appimage-extract'.format(linuxdeployqt_bin))
