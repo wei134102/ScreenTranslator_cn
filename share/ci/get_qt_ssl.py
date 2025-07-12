@@ -49,4 +49,14 @@ if len(url) == 0:
 c.download(url, file_name)
 c.extract(file_name, '.')
 
+# 检查SSL目录是否存在
+if not os.path.exists(root_path):
+    c.print('>> Error: SSL directory not found: {}'.format(root_path))
+    c.print('>> Available directories:')
+    import glob
+    for dir in glob.glob('*'):
+        if os.path.isdir(dir):
+            c.print('  - {}'.format(dir))
+    exit(1)
+
 c.symlink(root_path, ssl_dir)

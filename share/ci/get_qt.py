@@ -65,18 +65,31 @@ for module in qt_modules:
     c.download(base_url + '/' + package + '/' + file_name, file_name)
     c.extract(file_name, '.')
 
+# 检查Qt目录是否存在
+if not os.path.exists(qt_dir_prefix):
+    c.print('>> Error: Qt directory not found: {}'.format(qt_dir_prefix))
+    c.print('>> Available directories:')
+    import glob
+    for dir in glob.glob('*'):
+        if os.path.isdir(dir):
+            c.print('  - {}'.format(dir))
+    exit(1)
+
 c.symlink(qt_dir_prefix, qt_dir)
 
 c.print('>> Updating license')
 config_name = qt_dir + '/mkspecs/qconfig.pri'
-config = ''
-with open(config_name, 'r') as f:
-    config = f.read()
+if os.path.exists(config_name):
+    config = ''
+    with open(config_name, 'r') as f:
+        config = f.read()
 
-config = config.replace('Enterprise', 'OpenSource')
-config = config.replace('licheck.exe', '')
-config = config.replace('licheck64', '')
-config = config.replace('licheck_mac', '')
+    config = config.replace('Enterprise', 'OpenSource')
+    config = config.replace('licheck.exe', '')
+    config = config.replace('licheck64', '')
+    config = config.replace('licheck_mac', '')
 
-with open(config_name, 'w') as f:
-    f.write(config)
+    with open(config_name, 'w') as f:
+        f.write(config)
+else:
+    c.print('>> Warning: qconfig.pri not found, skipping license update')

@@ -149,25 +149,123 @@ jobs:
           
           # 下载Qt
           echo "Downloading Qt..."
-          python ./share/ci/get_qt.py
+          max_retries=3
+          retry_count=0
+          while [ $retry_count -lt $max_retries ]; do
+            echo "Qt download attempt $((retry_count + 1)) of $max_retries"
+            if python ./share/ci/get_qt.py; then
+              echo "Qt download completed successfully"
+              break
+            else
+              retry_count=$((retry_count + 1))
+              if [ $retry_count -lt $max_retries ]; then
+                echo "Qt download failed, retrying in 30 seconds..."
+                sleep 30
+              else
+                echo "Qt download failed after $max_retries attempts"
+                exit 1
+              fi
+            fi
+          done
           
           # 下载SSL
           echo "Downloading SSL..."
-          python ./share/ci/get_qt_ssl.py
+          retry_count=0
+          while [ $retry_count -lt $max_retries ]; do
+            echo "SSL download attempt $((retry_count + 1)) of $max_retries"
+            if python ./share/ci/get_qt_ssl.py; then
+              echo "SSL download completed successfully"
+              break
+            else
+              retry_count=$((retry_count + 1))
+              if [ $retry_count -lt $max_retries ]; then
+                echo "SSL download failed, retrying in 30 seconds..."
+                sleep 30
+              else
+                echo "SSL download failed after $max_retries attempts"
+                exit 1
+              fi
+            fi
+          done
           
           # 下载Leptonica
           echo "Downloading Leptonica..."
-          python ./share/ci/get_leptonica.py
+          retry_count=0
+          while [ $retry_count -lt $max_retries ]; do
+            echo "Leptonica download attempt $((retry_count + 1)) of $max_retries"
+            if python ./share/ci/get_leptonica.py; then
+              echo "Leptonica download completed successfully"
+              break
+            else
+              retry_count=$((retry_count + 1))
+              if [ $retry_count -lt $max_retries ]; then
+                echo "Leptonica download failed, retrying in 30 seconds..."
+                sleep 30
+              else
+                echo "Leptonica download failed after $max_retries attempts"
+                exit 1
+              fi
+            fi
+          done
           
           # 下载Tesseract
           echo "Downloading Tesseract..."
-          python ./share/ci/get_tesseract.py
+          retry_count=0
+          while [ $retry_count -lt $max_retries ]; do
+            echo "Tesseract download attempt $((retry_count + 1)) of $max_retries"
+            if python ./share/ci/get_tesseract.py; then
+              echo "Tesseract download completed successfully"
+              break
+            else
+              retry_count=$((retry_count + 1))
+              if [ $retry_count -lt $max_retries ]; then
+                echo "Tesseract download failed, retrying in 30 seconds..."
+                sleep 30
+              else
+                echo "Tesseract download failed after $max_retries attempts"
+                exit 1
+              fi
+            fi
+          done
           
           # 下载Hunspell
           echo "Downloading Hunspell..."
-          python ./share/ci/get_hunspell.py
+          retry_count=0
+          while [ $retry_count -lt $max_retries ]; do
+            echo "Hunspell download attempt $((retry_count + 1)) of $max_retries"
+            if python ./share/ci/get_hunspell.py; then
+              echo "Hunspell download completed successfully"
+              break
+            else
+              retry_count=$((retry_count + 1))
+              if [ $retry_count -lt $max_retries ]; then
+                echo "Hunspell download failed, retrying in 30 seconds..."
+                sleep 30
+              else
+                echo "Hunspell download failed after $max_retries attempts"
+                exit 1
+              fi
+            fi
+          done
           
           echo "All dependencies downloaded successfully"
+          
+          # 检查下载的文件
+          echo "Checking downloaded files..."
+          echo "Current directory contents:"
+          ls -la
+          echo "Qt directory contents:"
+          if [ -d "qt" ]; then
+            ls -la qt/
+          else
+            echo "Qt directory not found"
+          fi
+          echo "Dependencies directory contents:"
+          if [ -d "deps" ]; then
+            ls -la deps/
+          else
+            echo "Dependencies directory not found"
+          fi
 
       - name: Run tests
         shell: bash

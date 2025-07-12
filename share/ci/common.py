@@ -129,10 +129,39 @@ def symlink(src, dest):
     print('>> Creating symlink', src, '=>', dest)
     norm_src = os.path.normcase(src)
     norm_dest = os.path.normcase(dest)
+    
+    # 检查源是否存在
+    if not os.path.exists(norm_src):
+        print('>> Error: Source does not exist:', norm_src)
+        return False
+    
+    # 删除已存在的目标
     if os.path.lexists(norm_dest):
-        os.remove(norm_dest)
-    os.symlink(norm_src, norm_dest,
-               target_is_directory=os.path.isdir(norm_src))
+        try:
+            if os.path.islink(norm_dest):
+                os.unlink(norm_dest)
+            elif os.path.isdir(norm_dest):
+                shutil.rmtree(norm_dest)
+            else:
+                os.remove(norm_dest)
+        except Exception as e:
+            print('>> Warning: Failed to remove existing destination:', e)
+    
+    try:
+        os.symlink(norm_src, norm_dest,
+                   target_is_directory=os.path.isdir(norm_src))
+        return True
+    except OSError as e:
+        print('>> Warning: Failed to create symlink, trying copy:', e)
+        try:
+            if os.path.isdir(norm_src):
+                shutil.copytree(norm_src, norm_dest)
+            else:
+                shutil.copy2(norm_src, norm_dest)
+            return True
+        except Exception as copy_e:
+            print('>> Error: Failed to copy as fallback:', copy_e)
+            return False
 
 
 def recreate_dir(path):
