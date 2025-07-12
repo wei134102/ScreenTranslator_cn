@@ -2,9 +2,16 @@ import common as c
 from config import qt_modules, qt_version, qt_dir, os_name
 import sys
 import xml.etree.ElementTree as ET
+import os
 
 c.print('>> Downloading Qt {} ({}) for {}'.format(
     qt_version, qt_modules, os_name))
+
+# 确保当前目录存在
+c.print('>> Current working directory: {}'.format(os.getcwd()))
+c.print('>> Current directory contents:')
+for item in os.listdir('.'):
+    c.print('  - {}'.format(item))
 
 if os_name == 'linux':
     os_url = 'linux_x64'

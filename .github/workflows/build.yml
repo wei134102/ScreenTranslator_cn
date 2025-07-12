@@ -108,6 +108,11 @@ jobs:
         run: |
           echo "Setting up build environment..."
           
+          # 显示当前工作目录
+          echo "Current working directory: $(pwd)"
+          echo "Current directory contents:"
+          ls -la
+          
           # 创建必要的目录
           mkdir -p deps
           mkdir -p build
@@ -137,6 +142,21 @@ jobs:
           echo "ST_DEPS_DIR=$(pwd)/deps" >> $GITHUB_ENV
           echo "PATH=$(pwd)/qt/bin:$PATH" >> $GITHUB_ENV
 
+      - name: Test basic environment
+        shell: bash
+        run: |
+          echo "Testing basic environment..."
+          echo "Python version: $(python --version)"
+          echo "Current directory: $(pwd)"
+          echo "Available commands:"
+          which python || echo "python not found"
+          which cmake || echo "cmake not found"
+          which ninja || echo "ninja not found"
+          which make || echo "make not found"
+          echo "Environment variables:"
+          echo "ST_DEPS_DIR: $ST_DEPS_DIR"
+          echo "PATH: $PATH"
+
       - name: Download dependencies
         shell: bash
         run: |
@@ -153,6 +173,7 @@ jobs:
           retry_count=0
           while [ $retry_count -lt $max_retries ]; do
             echo "Qt download attempt $((retry_count + 1)) of $max_retries"
+            echo "Running: python ./share/ci/get_qt.py"
             if python ./share/ci/get_qt.py; then
               echo "Qt download completed successfully"
               break
@@ -163,90 +184,95 @@ jobs:
                 sleep 30
               else
                 echo "Qt download failed after $max_retries attempts"
+                echo "Current directory contents after failure:"
+                ls -la
                 exit 1
               fi
             fi
           done
           
-          # 下载SSL
-          echo "Downloading SSL..."
-          retry_count=0
-          while [ $retry_count -lt $max_retries ]; do
-            echo "SSL download attempt $((retry_count + 1)) of $max_retries"
-            if python ./share/ci/get_qt_ssl.py; then
-              echo "SSL download completed successfully"
-              break
-            else
-              retry_count=$((retry_count + 1))
-              if [ $retry_count -lt $max_retries ]; then
-                echo "SSL download failed, retrying in 30 seconds..."
-                sleep 30
-              else
-                echo "SSL download failed after $max_retries attempts"
-                exit 1
-              fi
-            fi
-          done
+          # 暂时注释掉其他依赖，先测试Qt下载
+          echo "Skipping other dependencies for now..."
           
-          # 下载Leptonica
-          echo "Downloading Leptonica..."
-          retry_count=0
-          while [ $retry_count -lt $max_retries ]; do
-            echo "Leptonica download attempt $((retry_count + 1)) of $max_retries"
-            if python ./share/ci/get_leptonica.py; then
-              echo "Leptonica download completed successfully"
-              break
-            else
-              retry_count=$((retry_count + 1))
-              if [ $retry_count -lt $max_retries ]; then
-                echo "Leptonica download failed, retrying in 30 seconds..."
-                sleep 30
-              else
-                echo "Leptonica download failed after $max_retries attempts"
-                exit 1
-              fi
-            fi
-          done
+          # # 下载SSL
+          # echo "Downloading SSL..."
+          # retry_count=0
+          # while [ $retry_count -lt $max_retries ]; do
+          #   echo "SSL download attempt $((retry_count + 1)) of $max_retries"
+          #   if python ./share/ci/get_qt_ssl.py; then
+          #     echo "SSL download completed successfully"
+          #     break
+          #   else
+          #     retry_count=$((retry_count + 1))
+          #     if [ $retry_count -lt $max_retries ]; then
+          #       echo "SSL download failed, retrying in 30 seconds..."
+          #       sleep 30
+          #     else
+          #       echo "SSL download failed after $max_retries attempts"
+          #       exit 1
+          #     fi
+          #   fi
+          # done
           
-          # 下载Tesseract
-          echo "Downloading Tesseract..."
-          retry_count=0
-          while [ $retry_count -lt $max_retries ]; do
-            echo "Tesseract download attempt $((retry_count + 1)) of $max_retries"
-            if python ./share/ci/get_tesseract.py; then
-              echo "Tesseract download completed successfully"
-              break
-            else
-              retry_count=$((retry_count + 1))
-              if [ $retry_count -lt $max_retries ]; then
-                echo "Tesseract download failed, retrying in 30 seconds..."
-                sleep 30
-              else
-                echo "Tesseract download failed after $max_retries attempts"
-                exit 1
-              fi
-            fi
-          done
+          # # 下载Leptonica
+          # echo "Downloading Leptonica..."
+          # retry_count=0
+          # while [ $retry_count -lt $max_retries ]; do
+          #   echo "Leptonica download attempt $((retry_count + 1)) of $max_retries"
+          #   if python ./share/ci/get_leptonica.py; then
+          #     echo "Leptonica download completed successfully"
+          #     break
+          #   else
+          #     retry_count=$((retry_count + 1))
+          #     if [ $retry_count -lt $max_retries ]; then
+          #       echo "Leptonica download failed, retrying in 30 seconds..."
+          #       sleep 30
+          #     else
+          #       echo "Leptonica download failed after $max_retries attempts"
+          #       exit 1
+          #     fi
+          #   fi
+          # done
           
-          # 下载Hunspell
-          echo "Downloading Hunspell..."
-          retry_count=0
-          while [ $retry_count -lt $max_retries ]; do
-            echo "Hunspell download attempt $((retry_count + 1)) of $max_retries"
-            if python ./share/ci/get_hunspell.py; then
-              echo "Hunspell download completed successfully"
-              break
-            else
-              retry_count=$((retry_count + 1))
-              if [ $retry_count -lt $max_retries ]; then
-                echo "Hunspell download failed, retrying in 30 seconds..."
-                sleep 30
-              else
-                echo "Hunspell download failed after $max_retries attempts"
-                exit 1
-              fi
-            fi
-          done
+          # # 下载Tesseract
+          # echo "Downloading Tesseract..."
+          # retry_count=0
+          # while [ $retry_count -lt $max_retries ]; do
+          #   echo "Tesseract download attempt $((retry_count + 1)) of $max_retries"
+          #   if python ./share/ci/get_tesseract.py; then
+          #     echo "Tesseract download completed successfully"
+          #     break
+          #   else
+          #     retry_count=$((retry_count + 1))
+          #     if [ $retry_count -lt $max_retries ]; then
+          #       echo "Tesseract download failed, retrying in 30 seconds..."
+          #       sleep 30
+          #     else
+          #       echo "Tesseract download failed after $max_retries attempts"
+          #       exit 1
+          #     fi
+          #   fi
+          # done
+          
+          # # 下载Hunspell
+          # echo "Downloading Hunspell..."
+          # retry_count=0
+          # while [ $retry_count -lt $max_retries ]; do
+          #   echo "Hunspell download attempt $((retry_count + 1)) of $max_retries"
+          #   if python ./share/ci/get_hunspell.py; then
+          #     echo "Hunspell download completed successfully"
+          #     break
+          #   else
+          #     retry_count=$((retry_count + 1))
+          #     if [ $retry_count -lt $max_retries ]; then
+          #       echo "Hunspell download failed, retrying in 30 seconds..."
+          #       sleep 30
+          #     else
+          #       echo "Hunspell download failed after $max_retries attempts"
+          #       exit 1
+          #     fi
+          #   fi
+          # done
           
           echo "All dependencies downloaded successfully"
           
@@ -267,66 +293,67 @@ jobs:
             echo "Dependencies directory not found"
           fi
 
-      - name: Run tests
-        shell: bash
-        run: |
-          set -e
-          echo "Running tests..."
-          
-          # 设置环境变量
-          export ST_DEPS_DIR=$(pwd)/deps
-          export PATH=$(pwd)/qt/bin:$PATH
-          
-          # 运行测试
-          python ./share/ci/test.py
+      # 暂时注释掉测试和构建步骤，先测试依赖下载
+      # - name: Run tests
+      #   shell: bash
+      #   run: |
+      #     set -e
+      #     echo "Running tests..."
+      #     
+      #     # 设置环境变量
+      #     export ST_DEPS_DIR=$(pwd)/deps
+      #     export PATH=$(pwd)/qt/bin:$PATH
+      #     
+      #     # 运行测试
+      #     python ./share/ci/test.py
 
-      - name: Build application
-        shell: bash
-        run: |
-          set -e
-          echo "Building application..."
-          
-          # 设置环境变量
-          export ST_DEPS_DIR=$(pwd)/deps
-          export PATH=$(pwd)/qt/bin:$PATH
-          
-          # 构建应用
-          python ./share/ci/build.py
+      # - name: Build application
+      #   shell: bash
+      #   run: |
+      #     set -e
+      #     echo "Building application..."
+      #     
+      #     # 设置环境变量
+      #     export ST_DEPS_DIR=$(pwd)/deps
+      #     export PATH=$(pwd)/qt/bin:$PATH
+      #     
+      #     # 构建应用
+      #     python ./share/ci/build.py
 
-      - name: Create package
-        shell: bash
-        run: |
-          set -e
-          echo "Creating package..."
-          
-          # 设置环境变量
-          export ST_DEPS_DIR=$(pwd)/deps
-          export PATH=$(pwd)/qt/bin:$PATH
-          
-          # 创建包
-          if [ "${{ env.OS }}" = "linux" ]; then
-            python ./share/ci/appimage.py
-          elif [ "${{ env.OS }}" = "win64" ]; then
-            python ./share/ci/windeploy.py
-          fi
-          
-          # 获取构建产物名称
-          echo "Getting artifact name..."
-          artifact_name=$(python ./share/ci/release.py artifact_name)
-          echo "Artifact name: $artifact_name"
-          echo "artifact=$artifact_name" >> $GITHUB_ENV
-          
-          # 检查构建产物
-          if [ -f "$artifact_name" ]; then
-            echo "Build artifact created successfully: $artifact_name"
-            ls -la "$artifact_name"
-          else
-            echo "Build artifact not found: $artifact_name"
-            ls -la *.zip *.exe *.AppImage 2>/dev/null || echo "No build artifacts found"
-            echo "Current directory contents:"
-            ls -la
-            exit 1
-          fi
+      # - name: Create package
+      #   shell: bash
+      #   run: |
+      #     set -e
+      #     echo "Creating package..."
+      #     
+      #     # 设置环境变量
+      #     export ST_DEPS_DIR=$(pwd)/deps
+      #     export PATH=$(pwd)/qt/bin:$PATH
+      #     
+      #     # 创建包
+      #     if [ "${{ env.OS }}" = "linux" ]; then
+      #       python ./share/ci/appimage.py
+      #     elif [ "${{ env.OS }}" = "win64" ]; then
+      #       python ./share/ci/windeploy.py
+      #     fi
+      #     
+      #     # 获取构建产物名称
+      #     echo "Getting artifact name..."
+      #     artifact_name=$(python ./share/ci/release.py artifact_name)
+      #     echo "Artifact name: $artifact_name"
+      #     echo "artifact=$artifact_name" >> $GITHUB_ENV
+      #     
+      #     # 检查构建产物
+      #     if [ -f "$artifact_name" ]; then
+      #       echo "Build artifact created successfully: $artifact_name"
+      #       ls -la "$artifact_name"
+      #     else
+      #       echo "Build artifact not found: $artifact_name"
+      #       ls -la *.zip *.exe *.AppImage 2>/dev/null || echo "No build artifacts found"
+      #       echo "Current directory contents:"
+      #       ls -la
+      #       exit 1
+      #     fi
 
       - name: Upload build artifact
         if: env.artifact != ''

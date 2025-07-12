@@ -2,8 +2,15 @@ import common as c
 from config import ssl_dir, os_name
 import sys
 import xml.etree.ElementTree as ET
+import os
 
 c.print('>> Downloading ssl for Qt for {}'.format(os_name))
+
+# 确保当前目录存在
+c.print('>> Current working directory: {}'.format(os.getcwd()))
+c.print('>> Current directory contents:')
+for item in os.listdir('.'):
+    c.print('  - {}'.format(item))
 
 if os_name == 'linux':
     os_url = 'linux_x64'
