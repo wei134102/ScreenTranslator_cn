@@ -197,29 +197,16 @@ jobs:
           export ST_DEPS_DIR=$(pwd)/deps
           export PATH=$(pwd)/qt/bin:$PATH
           
-          # 下载Qt (使用简化方法)
-          echo "Downloading Qt (simplified method)..."
-          max_retries=3
-          retry_count=0
-          while [ $retry_count -lt $max_retries ]; do
-            echo "Qt download attempt $((retry_count + 1)) of $max_retries"
-            echo "Running: python ./share/ci/get_qt_simple.py"
-            if python ./share/ci/get_qt_simple.py; then
-              echo "Qt download completed successfully"
-              break
-            else
-              retry_count=$((retry_count + 1))
-              if [ $retry_count -lt $max_retries ]; then
-                echo "Qt download failed, retrying in 30 seconds..."
-                sleep 30
-              else
-                echo "Qt download failed after $max_retries attempts"
-                echo "Current directory contents after failure:"
-                ls -la
-                exit 1
-              fi
-            fi
-          done
+          # 安装Qt (使用系统包管理器)
+          echo "Installing Qt via system package manager..."
+          if python ./share/ci/get_qt_system.py; then
+            echo "Qt installation completed successfully"
+          else
+            echo "Qt installation failed"
+            echo "Current directory contents after failure:"
+            ls -la
+            exit 1
+          fi
           
           # 暂时注释掉其他依赖，先测试Qt下载
           echo "Skipping other dependencies for now..."
