@@ -5,6 +5,8 @@ app_name = 'ScreenTranslator'
 
 target_name = app_name
 qt_version = '5.15.2'
+# 尝试使用更稳定的Qt版本
+# qt_version = '5.15.0'
 qt_modules = ['qtbase', 'qttools', 'icu',
               'qttranslations', 'qtx11extras', 'qtwebengine', 'qtwebchannel',
               'qtdeclarative', 'qtlocation', 'opengl32sw', 'd3dcompiler_47',

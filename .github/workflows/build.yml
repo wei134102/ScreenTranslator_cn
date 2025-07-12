@@ -197,14 +197,14 @@ jobs:
           export ST_DEPS_DIR=$(pwd)/deps
           export PATH=$(pwd)/qt/bin:$PATH
           
-          # 下载Qt
-          echo "Downloading Qt..."
+          # 下载Qt (使用简化方法)
+          echo "Downloading Qt (simplified method)..."
           max_retries=3
           retry_count=0
           while [ $retry_count -lt $max_retries ]; do
             echo "Qt download attempt $((retry_count + 1)) of $max_retries"
-            echo "Running: python ./share/ci/get_qt.py"
-            if python ./share/ci/get_qt.py; then
+            echo "Running: python ./share/ci/get_qt_simple.py"
+            if python ./share/ci/get_qt_simple.py; then
               echo "Qt download completed successfully"
               break
             else
