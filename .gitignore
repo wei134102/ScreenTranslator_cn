@@ -1,5 +1,12 @@
 # Compiled translations
 *.qm
+5.12*
+build/
+5.15*
+*.gz
+leptonica*
+qt*
+tesseract*
 
 # Qt creator user settings
 *.user

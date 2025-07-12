@@ -42,7 +42,7 @@ jobs:
         config:
           - { name: "linux", os: ubuntu-22.04 }
           # 暂时注释掉Windows构建，先确保Linux构建正常
-          # - { name: "win64", os: windows-latest }
+          - { name: "win64", os: windows-latest }
           # - { name: "win32", os: windows-latest }
           # - { name: "macos", os: macos-latest }
     steps:
