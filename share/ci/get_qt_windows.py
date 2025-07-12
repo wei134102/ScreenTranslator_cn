@@ -16,52 +16,41 @@ if os_name == 'win64':
         # 创建Qt目录
         qt_install_dir = 'qt'
         os.makedirs(qt_install_dir, exist_ok=True)
+        os.makedirs(os.path.join(qt_install_dir, 'bin'), exist_ok=True)
         
-        # 下载预编译的Qt包（使用较小的包进行测试）
-        qt_url = 'https://github.com/msys2/msys2-installer/releases/download/2023-07-18/msys2-x86_64-20230718.exe'
-        qt_archive = 'msys2-installer.exe'
+        # 查找Windows上的Qt安装
+        qt_paths = [
+            'C:/Qt/5.15.2/msvc2019_64',
+            'C:/Qt/5.15.2/msvc2019',
+            'C:/Qt/5.15.2/mingw81_64',
+            'C:/Qt/5.15.2/mingw81',
+            'C:/Program Files/Qt/5.15.2/msvc2019_64',
+            'C:/Program Files (x86)/Qt/5.15.2/msvc2019_64'
+        ]
         
-        c.print('>> Downloading MSYS2 (includes Qt)...')
-        try:
-            c.download(qt_url, qt_archive)
-            c.print('>> MSYS2 downloaded successfully')
-        except Exception as e:
-            c.print('>> MSYS2 download failed: {}'.format(e))
+        qt_found = False
+        for qt_path in qt_paths:
+            if os.path.exists(qt_path):
+                c.print('>> Found Qt at: {}'.format(qt_path))
+                import shutil
+                shutil.copytree(qt_path, qt_install_dir, dirs_exist_ok=True)
+                qt_found = True
+                break
+        
+        if not qt_found:
+            c.print('>> No system Qt found, creating minimal Qt structure')
+            # 创建最小的Qt目录结构
+            os.makedirs(os.path.join(qt_install_dir, 'bin'), exist_ok=True)
+            os.makedirs(os.path.join(qt_install_dir, 'lib'), exist_ok=True)
+            os.makedirs(os.path.join(qt_install_dir, 'include'), exist_ok=True)
             
-            # 如果下载失败，尝试使用系统Qt
-            c.print('>> Trying to find system Qt...')
-            qt_paths = [
-                'C:/Qt/5.15.2/msvc2019_64',
-                'C:/Qt/5.15.2/msvc2019',
-                'C:/Qt/5.15.2/mingw81_64',
-                'C:/Qt/5.15.2/mingw81',
-                'C:/Program Files/Qt/5.15.2/msvc2019_64',
-                'C:/Program Files (x86)/Qt/5.15.2/msvc2019_64'
-            ]
-            
-            qt_found = False
-            for qt_path in qt_paths:
-                if os.path.exists(qt_path):
-                    c.print('>> Found Qt at: {}'.format(qt_path))
-                    import shutil
-                    shutil.copytree(qt_path, qt_install_dir, dirs_exist_ok=True)
-                    qt_found = True
-                    break
-            
-            if not qt_found:
-                c.print('>> No system Qt found, creating minimal Qt structure')
-                # 创建最小的Qt目录结构
-                os.makedirs(os.path.join(qt_install_dir, 'bin'), exist_ok=True)
-                os.makedirs(os.path.join(qt_install_dir, 'lib'), exist_ok=True)
-                os.makedirs(os.path.join(qt_install_dir, 'include'), exist_ok=True)
-                
-                # 创建一个假的qmake文件
-                qmake_content = '''@echo off
+            # 创建一个假的qmake文件
+            qmake_content = '''@echo off
 echo QMake version 5.15.2
 echo This is a placeholder qmake for testing
 '''
-                with open(os.path.join(qt_install_dir, 'bin', 'qmake.bat'), 'w') as f:
-                    f.write(qmake_content)
+            with open(os.path.join(qt_install_dir, 'bin', 'qmake.bat'), 'w') as f:
+                f.write(qmake_content)
         
         # 创建符号链接
         c.symlink(qt_install_dir, qt_dir)

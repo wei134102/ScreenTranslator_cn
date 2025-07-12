@@ -39,6 +39,7 @@ if os_name == 'linux':
         # 创建Qt目录结构
         qt_install_dir = 'qt'
         os.makedirs(qt_install_dir, exist_ok=True)
+        os.makedirs(os.path.join(qt_install_dir, 'bin'), exist_ok=True)
         
         # 查找系统Qt安装
         qt_paths = [
@@ -60,10 +61,10 @@ if os_name == 'linux':
                     for file in os.listdir(qt_path):
                         if file.startswith('qmake') or file.startswith('qt'):
                             src_file = os.path.join(qt_path, file)
-                            dst_file = os.path.join(qt_install_dir, file)
+                            dst_file = os.path.join(qt_install_dir, 'bin', file)
                             if os.path.isfile(src_file):
                                 shutil.copy2(src_file, dst_file)
-                                c.print('>> Copied {} to qt directory'.format(file))
+                                c.print('>> Copied {} to qt/bin directory'.format(file))
                 qt_found = True
         
         if qt_found:

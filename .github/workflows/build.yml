@@ -197,6 +197,9 @@ jobs:
           export ST_DEPS_DIR=$(pwd)/deps
           export PATH=$(pwd)/qt/bin:$PATH
           
+          # 设置重试次数
+          max_retries=3
+          
           # 安装Qt (根据平台选择不同方法)
           if [ "${{ env.OS }}" = "linux" ]; then
             echo "Installing Qt via system package manager (Linux)..."
