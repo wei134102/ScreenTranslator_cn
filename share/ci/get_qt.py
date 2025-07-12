@@ -42,7 +42,17 @@ qt_version_dotless = qt_version.replace('.', '')
 base_url = 'https://download.qt.io/online/qtsdkrepository/{}/desktop/qt5_{}' \
     .format(os_url, qt_version_dotless)
 updates_file = 'Updates-{}-{}.xml'.format(qt_version, os_name)
-c.download(base_url + '/Updates.xml', updates_file)
+
+c.print('>> Downloading updates file from: {}'.format(base_url + '/Updates.xml'))
+try:
+    c.download(base_url + '/Updates.xml', updates_file)
+except Exception as e:
+    c.print('>> Error downloading updates file: {}'.format(e))
+    # 尝试备用URL
+    backup_url = 'https://download.qt.io/online/qtsdkrepository/{}/desktop/qt5_{}/Updates.xml' \
+        .format(os_url, qt_version_dotless)
+    c.print('>> Trying backup URL: {}'.format(backup_url))
+    c.download(backup_url, updates_file)
 
 updates = ET.parse(updates_file)
 updates_root = updates.getroot()
@@ -79,7 +89,33 @@ c.print('>> Required modules:')
 for module in qt_modules:
     c.print('  - {}'.format(module))
 
+# 先尝试下载一个小的模块进行测试
+test_modules = ['qtbase']  # 只下载基础模块进行测试
+c.print('>> Testing with minimal modules: {}'.format(test_modules))
+
+for module in test_modules:
+    if module not in all_modules:
+        c.print('>> Required module {} not available'.format(module))
+        c.print('>> Available modules:')
+        for k in iter(sorted(all_modules.keys())):
+            c.print('    - {}'.format(k))
+        continue
+    file_name = all_modules[module]['file']
+    package = all_modules[module]['package']
+    c.print('>> Downloading test module: {} -> {}'.format(module, file_name))
+    try:
+        c.download(base_url + '/' + package + '/' + file_name, file_name)
+        c.extract(file_name, '.')
+        c.print('>> Test module downloaded successfully')
+    except Exception as e:
+        c.print('>> Error downloading test module: {}'.format(e))
+        exit(1)
+
+# 如果测试成功，继续下载其他模块
+c.print('>> Test successful, downloading all modules...')
 for module in qt_modules:
+    if module in test_modules:  # 跳过已经下载的测试模块
+        continue
     if module not in all_modules:
         c.print('>> Required module {} not available'.format(module))
         c.print('>> Available modules:')
