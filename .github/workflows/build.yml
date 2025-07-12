@@ -8,7 +8,7 @@ jobs:
   release:
     name: Create release
     if: contains(github.ref, '/tags/')
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Create release
         id: create_release
@@ -25,7 +25,7 @@ jobs:
         run: echo "${{ steps.create_release.outputs.upload_url }}" > ./release_upload_url
 
       - name: Upload release url
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           path: ./release_upload_url
           name: release_upload_url
@@ -41,26 +41,27 @@ jobs:
         config:
           - { name: "win64", os: windows-latest }
           - { name: "win32", os: windows-latest }
-          - { name: "linux", os: ubuntu-18.04 }
+          - { name: "linux", os: ubuntu-20.04 }
           # - { name: "macos", os: macos-latest }
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 10
 
       - name: Setup python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
           python-version: "3.x"
 
       - name: Install system libs
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libxcb-*
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libxkbcommon-x11-0 libxcb-*
           echo "QMAKE_FLAGS=QMAKE_CXX=g++-10 QMAKE_CC=gcc-10 QMAKE_LINK=g++-10" >> $GITHUB_ENV
 
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: deps
           key: ${{ env.OS }}-${{ hashFiles('./share/ci/*.py') }}
@@ -73,14 +74,14 @@ jobs:
 
       - name: Upload build artifact
         if: env.artifact != ''
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.artifact }}
           path: ./${{ env.artifact }}
 
       - name: Download release url
         if: contains(github.ref, '/tags/')
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@v4
         with:
           name: release_upload_url
           path: ./
