@@ -197,15 +197,27 @@ jobs:
           export ST_DEPS_DIR=$(pwd)/deps
           export PATH=$(pwd)/qt/bin:$PATH
           
-          # 安装Qt (使用系统包管理器)
-          echo "Installing Qt via system package manager..."
-          if python ./share/ci/get_qt_system.py; then
-            echo "Qt installation completed successfully"
-          else
-            echo "Qt installation failed"
-            echo "Current directory contents after failure:"
-            ls -la
-            exit 1
+          # 安装Qt (根据平台选择不同方法)
+          if [ "${{ env.OS }}" = "linux" ]; then
+            echo "Installing Qt via system package manager (Linux)..."
+            if python ./share/ci/get_qt_system.py; then
+              echo "Qt installation completed successfully"
+            else
+              echo "Qt installation failed"
+              echo "Current directory contents after failure:"
+              ls -la
+              exit 1
+            fi
+          elif [ "${{ env.OS }}" = "win64" ]; then
+            echo "Installing Qt for Windows..."
+            if python ./share/ci/get_qt_windows.py; then
+              echo "Qt installation completed successfully"
+            else
+              echo "Qt installation failed"
+              echo "Current directory contents after failure:"
+              ls -la
+              exit 1
+            fi
           fi
           
           # 暂时注释掉其他依赖，先测试Qt下载

@@ -90,10 +90,71 @@ if os_name == 'linux':
         exit(1)
 
 elif os_name == 'win64':
-    c.print('>> Windows Qt installation not implemented yet')
-    # 对于Windows，我们可以使用chocolatey或其他包管理器
-    # 暂时跳过Windows的Qt安装
-    exit(1)
+    c.print('>> Installing Qt5 via chocolatey for Windows...')
+    try:
+        # 尝试使用chocolatey安装Qt
+        result = subprocess.run(['choco', 'install', 'qt5', '--yes'], 
+                             capture_output=True, text=True)
+        if result.returncode == 0:
+            c.print('>> Qt installed via chocolatey')
+        else:
+            c.print('>> Chocolatey installation failed, trying alternative method')
+            
+            # 尝试使用vcpkg安装Qt
+            result = subprocess.run(['vcpkg', 'install', 'qt5'], 
+                                 capture_output=True, text=True)
+            if result.returncode == 0:
+                c.print('>> Qt installed via vcpkg')
+            else:
+                c.print('>> Vcpkg installation failed')
+                
+                # 如果包管理器都失败，尝试手动下载
+                c.print('>> Trying manual Qt download for Windows...')
+                qt_url = 'https://download.qt.io/official_releases/qt/5.15.2/5.15.2/single/qt-everywhere-src-5.15.2.tar.xz'
+                qt_archive = 'qt-everywhere-src-5.15.2.tar.xz'
+                
+                try:
+                    c.download(qt_url, qt_archive)
+                    c.extract(qt_archive, '.')
+                    c.print('>> Qt downloaded and extracted successfully')
+                except Exception as e:
+                    c.print('>> Manual Qt download failed: {}'.format(e))
+                    exit(1)
+        
+        # 创建Qt目录结构
+        qt_install_dir = 'qt'
+        os.makedirs(qt_install_dir, exist_ok=True)
+        
+        # 查找Windows上的Qt安装
+        qt_paths = [
+            'C:/Qt/5.15.2/msvc2019_64',
+            'C:/Qt/5.15.2/msvc2019',
+            'C:/Qt/5.15.2/mingw81_64',
+            'C:/Qt/5.15.2/mingw81',
+            'C:/Program Files/Qt/5.15.2/msvc2019_64',
+            'C:/Program Files (x86)/Qt/5.15.2/msvc2019_64'
+        ]
+        
+        qt_found = False
+        for qt_path in qt_paths:
+            if os.path.exists(qt_path):
+                c.print('>> Found Qt at: {}'.format(qt_path))
+                import shutil
+                shutil.copytree(qt_path, qt_install_dir, dirs_exist_ok=True)
+                qt_found = True
+                break
+        
+        if qt_found:
+            # 创建符号链接
+            c.symlink(qt_install_dir, qt_dir)
+            c.print('>> Qt setup completed for Windows')
+        else:
+            c.print('>> Error: Qt not found in Windows paths')
+            exit(1)
+            
+    except Exception as e:
+        c.print('>> Error installing Qt on Windows: {}'.format(e))
+        exit(1)
 
 else:
     c.print('>> Unsupported OS: {}'.format(os_name))
