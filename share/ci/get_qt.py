@@ -13,6 +13,11 @@ c.print('>> Current directory contents:')
 for item in os.listdir('.'):
     c.print('  - {}'.format(item))
 
+# 显示配置信息
+c.print('>> OS name: {}'.format(os_name))
+c.print('>> Kit architecture: {}'.format(kit_arch))
+c.print('>> Qt directory prefix: {}'.format(qt_dir_prefix))
+
 if os_name == 'linux':
     os_url = 'linux_x64'
     kit_arch = 'gcc_64'
@@ -25,6 +30,9 @@ elif os_name == 'win64':
     os_url = 'windows_x86'
     kit_arch = 'win64_msvc2019_64'
     qt_dir_prefix = '{}/msvc2019_64'.format(qt_version)
+    # Windows上可能需要不同的架构名称
+    if not any(kit_arch in name for name in ['qtbase', 'qttools']):
+        kit_arch = 'win64_msvc2019'
 elif os_name == 'macos':
     os_url = 'mac_x64'
     kit_arch = 'clang_64'
@@ -63,12 +71,24 @@ if len(sys.argv) > 1:  # handle subcommand
             c.print(k, '---', all_modules[k]['file'])
     exit(0)
 
+c.print('>> Available modules:')
+for k in iter(sorted(all_modules.keys())):
+    c.print('  - {}: {}'.format(k, all_modules[k]['file']))
+
+c.print('>> Required modules:')
+for module in qt_modules:
+    c.print('  - {}'.format(module))
+
 for module in qt_modules:
     if module not in all_modules:
         c.print('>> Required module {} not available'.format(module))
+        c.print('>> Available modules:')
+        for k in iter(sorted(all_modules.keys())):
+            c.print('    - {}'.format(k))
         continue
     file_name = all_modules[module]['file']
     package = all_modules[module]['package']
+    c.print('>> Downloading module: {} -> {}'.format(module, file_name))
     c.download(base_url + '/' + package + '/' + file_name, file_name)
     c.extract(file_name, '.')
 

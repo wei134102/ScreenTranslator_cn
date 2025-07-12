@@ -67,6 +67,10 @@ jobs:
           # 安装必要的Windows构建工具
           choco install ninja cmake --yes
           echo "QMAKE_FLAGS=QMAKE_CXX=cl QMAKE_CC=cl QMAKE_LINK=link" >> $GITHUB_ENV
+          
+          # 设置Windows特定的环境变量
+          echo "OS=win64" >> $GITHUB_ENV
+          echo "MSVC_VERSION=C:/Program Files/Microsoft Visual Studio/2022/Enterprise" >> $GITHUB_ENV
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -156,6 +160,19 @@ jobs:
           echo "Environment variables:"
           echo "ST_DEPS_DIR: $ST_DEPS_DIR"
           echo "PATH: $PATH"
+          echo "OS: $OS"
+
+      - name: Test Windows environment
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          echo "Testing Windows environment..."
+          echo "OS environment variable: %OS%"
+          echo "MSVC_VERSION: %MSVC_VERSION%"
+          echo "Available Visual Studio installations:"
+          where /q vswhere && vswhere -all -property installationPath || echo "vswhere not available"
+          echo "Current directory:"
+          dir
 
       - name: Download dependencies
         shell: bash
