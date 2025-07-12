@@ -8,7 +8,7 @@ jobs:
   release:
     name: Create release
     if: contains(github.ref, '/tags/')
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Create release
         id: create_release
@@ -40,9 +40,10 @@ jobs:
     strategy:
       matrix:
         config:
-          - { name: "win64", os: windows-latest }
-          - { name: "win32", os: windows-latest }
-          - { name: "linux", os: ubuntu-20.04 }
+          - { name: "linux", os: ubuntu-22.04 }
+          # 暂时注释掉Windows构建，先确保Linux构建正常
+          # - { name: "win64", os: windows-latest }
+          # - { name: "win32", os: windows-latest }
           # - { name: "macos", os: macos-latest }
     steps:
       - uses: actions/checkout@v4
@@ -81,6 +82,17 @@ jobs:
           free -h || echo "free command not available"
           echo "=== End Debug Info ==="
 
+      - name: Check Windows environment
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          echo "=== Windows Environment Check ==="
+          echo "Visual Studio version:"
+          dir "C:\Program Files\Microsoft Visual Studio" 2>nul || echo "Visual Studio not found in default location"
+          echo "Available Visual Studio installations:"
+          where /q vswhere && vswhere -all -property installationPath || echo "vswhere not available"
+          echo "=== End Windows Check ==="
+
       - name: Make a release
         shell: bash
         run: |
@@ -98,9 +110,36 @@ jobs:
             echo "Dependencies directory does not exist"
           fi
           
-          # 运行构建脚本
+          # 检查Python和必要工具
+          echo "Checking Python installation..."
+          python --version
+          which python
+          
+          # 检查构建脚本
+          echo "Checking build scripts..."
+          ls -la ./share/ci/
+          
+          # 运行构建脚本（添加重试机制）
           echo "Running release.py..."
-          python ./share/ci/release.py
+          max_retries=3
+          retry_count=0
+          
+          while [ $retry_count -lt $max_retries ]; do
+            echo "Attempt $((retry_count + 1)) of $max_retries"
+            if python ./share/ci/release.py; then
+              echo "Build completed successfully"
+              break
+            else
+              retry_count=$((retry_count + 1))
+              if [ $retry_count -lt $max_retries ]; then
+                echo "Build failed, retrying in 30 seconds..."
+                sleep 30
+              else
+                echo "Build failed after $max_retries attempts"
+                exit 1
+              fi
+            fi
+          done
           
           # 获取构建产物名称
           echo "Getting artifact name..."
@@ -115,6 +154,8 @@ jobs:
           else
             echo "Build artifact not found: $artifact_name"
             ls -la *.zip *.exe 2>/dev/null || echo "No zip or exe files found"
+            echo "Current directory contents:"
+            ls -la
           fi
 
       - name: Upload build artifact
