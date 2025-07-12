@@ -40,7 +40,11 @@ def download(url, out, force=False):
     out_path = os.path.dirname(out)
     if len(out_path) > 0:
         os.makedirs(out_path, exist_ok=True)
-    urllib.request.urlretrieve(url, out)
+    try:
+        urllib.request.urlretrieve(url, out)
+    except Exception as e:
+        print('>> Error downloading {}: {}'.format(url, e))
+        raise
 
 
 def extract(src, dest):

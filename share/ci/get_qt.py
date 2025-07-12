@@ -144,15 +144,26 @@ c.print('>> Updating license')
 config_name = qt_dir + '/mkspecs/qconfig.pri'
 if os.path.exists(config_name):
     config = ''
-    with open(config_name, 'r') as f:
-        config = f.read()
+    try:
+        with open(config_name, 'r', encoding='utf-8') as f:
+            config = f.read()
+    except UnicodeDecodeError:
+        try:
+            with open(config_name, 'r', encoding='latin-1') as f:
+                config = f.read()
+        except Exception as e:
+            c.print('>> Warning: Could not read config file: {}'.format(e))
+            return
 
     config = config.replace('Enterprise', 'OpenSource')
     config = config.replace('licheck.exe', '')
     config = config.replace('licheck64', '')
     config = config.replace('licheck_mac', '')
 
-    with open(config_name, 'w') as f:
-        f.write(config)
+    try:
+        with open(config_name, 'w', encoding='utf-8') as f:
+            f.write(config)
+    except Exception as e:
+        c.print('>> Warning: Could not write config file: {}'.format(e))
 else:
     c.print('>> Warning: qconfig.pri not found, skipping license update')

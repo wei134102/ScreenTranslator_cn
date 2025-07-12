@@ -1,5 +1,6 @@
 from os import getenv, path
 import re
+import sys
 
 app_name = 'ScreenTranslator'
 
@@ -22,10 +23,21 @@ test_pro_file = path.abspath(path.dirname(__file__) +
                              '/../../tests/tests.pro')
 bin_name = 'screen-translator'
 app_version = 'testing'
-with open(pro_file, 'r') as f:
-    match = re.search(r'VER=(.*)', f.read())
-    if match:
-        app_version = match.group(1)
+try:
+    with open(pro_file, 'r', encoding='utf-8') as f:
+        match = re.search(r'VER=(.*)', f.read())
+        if match:
+            app_version = match.group(1)
+except UnicodeDecodeError:
+    # 如果UTF-8失败，尝试其他编码
+    try:
+        with open(pro_file, 'r', encoding='latin-1') as f:
+            match = re.search(r'VER=(.*)', f.read())
+            if match:
+                app_version = match.group(1)
+    except Exception as e:
+        print('>> Warning: Could not read version from pro file: {}'.format(e), file=sys.stderr)
+        app_version = 'testing'
 ts_files_dir = path.abspath(path.dirname(__file__) + '/../../translations')
 
 os_name = getenv('OS', 'linux')

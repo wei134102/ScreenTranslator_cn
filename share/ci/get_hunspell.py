@@ -19,9 +19,18 @@ cache_file_data = required_version + build_type_flag
 def check_existing():
     if not os.path.exists(cache_file):
         return False
-    with open(cache_file, 'r') as f:
-        cached = f.read()
-        if cached != cache_file_data:
+    try:
+        with open(cache_file, 'r', encoding='utf-8') as f:
+            cached = f.read()
+            if cached != cache_file_data:
+                return False
+    except UnicodeDecodeError:
+        try:
+            with open(cache_file, 'r', encoding='latin-1') as f:
+                cached = f.read()
+                if cached != cache_file_data:
+                    return False
+        except Exception:
             return False
 
     if platform.system() == "Windows":
@@ -131,8 +140,11 @@ else:
     c.run('cmake --build . --config {}'.format(build_type_flag))
     c.run('cmake --build . --target install --config {}'.format(build_type_flag))
 
-with open(cache_file, 'w') as f:
-    f.write(cache_file_data)
+try:
+    with open(cache_file, 'w', encoding='utf-8') as f:
+        f.write(cache_file_data)
+except Exception as e:
+    c.print('>> Warning: Could not write cache file: {}'.format(e))
 
 if not check_existing():  # create links
     c.print('>> Build failed')
